@@ -1,0 +1,20 @@
+{
+  "name": "browser-performance-2",
+  "version": "1.0.0",
+  "description": "A simple web app for learning Chrome DevTools performance analysis",
+  "main": "index.html",
+  "scripts": {
+    "start": "http-server -p 3000",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "performance",
+    "chrome-devtools",
+    "learning"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+} 
