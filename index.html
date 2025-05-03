@@ -1,23 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Infinite Photo Gallery</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
     <div class="container">
-        <header>
-            <h1>Infinite Photo Gallery</h1>
-            <div class="controls">
-                <input type="text" id="searchInput" placeholder="Search photos...">
-                <button id="loadMore">Load More</button>
-            </div>
-        </header>
-        <div id="gallery" class="gallery"></div>
-        <div id="loading" class="loading">Loading...</div>
+      <header>
+        <h1>Infinite Photo Gallery</h1>
+        <div id="mainPhoto"></div>
+        <div class="controls">
+          <input type="text" id="searchInput" placeholder="Search photos..." />
+          <button id="loadMore">Load More</button>
+        </div>
+      </header>
+      <div id="gallery" class="gallery"></div>
+      <div id="loading" class="loading">Loading...</div>
     </div>
     <script src="app.js"></script>
-</body>
-</html> 
+  </body>
+</html>
