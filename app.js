@@ -28,7 +28,7 @@ const IMAGE_URLS = Array(100)
   .fill()
   .map((_, i) => ({
     urls: {
-      regular: `https://picsum.photos/1200/800?random=${i}`,
+      regular: `https://picsum.photos/id/${i}/1200/800`,
     },
     user: {
       name: `Photographer ${i + 1}`,
@@ -51,6 +51,8 @@ const searchInput = document.getElementById("searchInput");
 const loadMoreBtn = document.getElementById("loadMore");
 const loadingIndicator = document.getElementById("loading");
 
+const originalImages = new Map();
+
 function createPhotoCard(photo) {
   const card = document.createElement("div");
   card.className = "photo-card";
@@ -58,7 +60,7 @@ function createPhotoCard(photo) {
   const img = document.createElement("img");
   img.src = photo.urls.regular;
   img.alt = photo.alt_description || "Photo";
-  img.loading = "lazy"; // Add lazy loading
+  img.loading = "lazy";
   img.crossOrigin = "anonymous";
 
   const info = document.createElement("div");
@@ -70,35 +72,56 @@ function createPhotoCard(photo) {
   const description = document.createElement("p");
   description.textContent = photo.description || "No description available";
 
-  const adjustButton = document.createElement("button");
-  adjustButton.textContent = "Make picture worse";
-  adjustButton.className = "adjust-button";
-  adjustButton.addEventListener("click", () => {
+  const processButton = document.createElement("button");
+  processButton.textContent = "Make picture worse";
+  processButton.className = "adjust-button";
+
+  let activeBtnToDebug;
+
+  const handleProcess = (e) => {
+    const activeProcessButton = e.target;
+
+    const restoreButton = document.createElement("button");
+    restoreButton.textContent = "Restore original";
+    restoreButton.className = "restore-button adjust-button";
+    restoreButton.addEventListener("click", handleRestore);
+    originalImages.set(restoreButton, img.src);
+
     processImg(img);
-  });
+
+    console.log("originalImages", originalImages.keys().next().value);
+    activeBtnToDebug = restoreButton;
+    activeProcessButton.replaceWith(restoreButton);
+  };
+
+  const handleRestore = (e) => {
+    const activeRestoreButton = e.target;
+
+    console.log("same button?", activeBtnToDebug === activeRestoreButton);
+    const originalImgSrc = originalImages.get(activeRestoreButton);
+
+    console.log("originalImages", originalImgSrc);
+    img.src = originalImgSrc;
+
+    console.log("originalImagesSize", originalImages.size);
+    const newProcessButton = document.createElement("button");
+    newProcessButton.textContent = "Make picture worse";
+    newProcessButton.className = "adjust-button";
+    newProcessButton.addEventListener("click", handleProcess);
+
+    activeRestoreButton.replaceWith(newProcessButton);
+  };
+
+  processButton.addEventListener("click", handleProcess);
 
   info.appendChild(title);
   info.appendChild(description);
-  info.appendChild(adjustButton);
+  info.appendChild(processButton);
   card.appendChild(img);
   card.appendChild(info);
 
   return card;
 }
-
-// function processNextInQueue() {
-//   if (processingQueue.length === 0) {
-//     isProcessing = false;
-//     return;
-//   }
-
-//   isProcessing = true;
-//   const { photo, img } = processingQueue.shift();
-//   processImage(photo, img, () => {
-//     // Process next item in queue after current one is done
-//     setTimeout(processNextInQueue, 0);
-//   });
-// }
 
 function processImg(img) {
   console.time("Image Processing");
@@ -106,31 +129,26 @@ function processImg(img) {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
-  // Set canvas dimensions to match image
   canvas.width = img.naturalWidth;
   canvas.height = img.naturalHeight;
 
-  // Draw image to canvas
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
   const start = performance.now();
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-  // Apply multiple filters sequentially
-  //   let filtered = grayscaleFilter(imageData);
-  // filtered = boxBlurFilter(imageData, canvas.width, canvas.height);
-  // filtered = sobelEdgeFilter(imageData, canvas.width, canvas.height);
-  filtered = gaussianBlurFilter(imageData, canvas.width, canvas.height);
+  // Apply filters in sequence
+  let filtered = imageData;
+  filtered = gaussianBlurFilter(filtered, canvas.width, canvas.height);
   filtered = applySepia(filtered);
-  //   filtered = tiltShiftFilter(imageData, canvas.width, canvas.height);
-  //   filtered = gaussianBlurFilter(filtered, canvas.width, canvas.height);
+  filtered = applyVignette(filtered, canvas.width, canvas.height);
+  filtered = applySharpen(filtered, canvas.width, canvas.height);
 
   ctx.putImageData(filtered, 0, 0);
 
   const end = performance.now();
   console.log(`Processing took ${Math.round(end - start)}ms`);
 
-  // Replace original image with processed version
   img.src = canvas.toDataURL("image/jpeg");
 
   console.timeEnd("Image Processing");
@@ -149,22 +167,17 @@ function processImage(photo, imgElement, callback) {
     for (let i = 0; i < 1_000_000 * 100; i++) {
       a = Math.max(a, Math.sqrt(i));
     }
-    console.log("a", a);
-    // Apply a realistic image effect
     ctx.drawImage(img, 0, 0);
 
-    // Get image data for processing
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
 
-    // Apply a simple brightness adjustment
     for (let i = 0; i < data.length; i += 4) {
-      data[i] = Math.min(255, data[i] * 1.2); // Red
-      data[i + 1] = Math.min(255, data[i + 1] * 1.2); // Green
-      data[i + 2] = Math.min(255, data[i + 2] * 1.2); // Blue
+      data[i] = Math.min(255, data[i] * 1.2);
+      data[i + 1] = Math.min(255, data[i + 1] * 1.2);
+      data[i + 2] = Math.min(255, data[i + 2] * 1.2);
     }
 
-    // Put the processed image data back
     ctx.putImageData(imageData, 0, 0);
 
     const processedData = canvas.toDataURL();
@@ -178,7 +191,6 @@ function processImage(photo, imgElement, callback) {
       photoCache.shift();
     }
 
-    // Update the image with processed version
     imgElement.src = processedData;
 
     console.log("processed");
@@ -197,7 +209,7 @@ async function loadPhotos(count = 10) {
   const photos = IMAGE_URLS.slice(startIndex, startIndex + count);
 
   // Simulate network delay
-//   await new Promise((resolve) => setTimeout(resolve, 1000));
+  //   await new Promise((resolve) => setTimeout(resolve, 1000));
 
   photos.forEach((photo) => {
     const card = createPhotoCard(photo);
@@ -254,10 +266,9 @@ window.addEventListener("scroll", () => {
   }
 });
 
-
 const init = () => {
-    loadPhotos(20);
-    void loadMainPhoto(20);
+  loadPhotos(20);
+  void loadMainPhoto(20);
 };
 
 init();
@@ -429,7 +440,8 @@ function applyColorAdjustments(data, histogramData) {
 }
 
 // Apply sharpening filter (fourth pass)
-function applySharpen(data, width, height) {
+function applySharpen(imageData, width, height) {
+  const data = imageData.data;
   // Create a copy of the data (memory inefficient)
   const origData = new Uint8ClampedArray(data);
 
@@ -462,10 +474,13 @@ function applySharpen(data, width, height) {
       data[idx + 2] = Math.min(255, Math.max(0, sumB));
     }
   }
+  imageData.data.set(data);
+  return imageData;
 }
 
 // Apply vignette effect (fifth pass)
-function applyVignette(data, width, height) {
+function applyVignette(imageData, width, height) {
+  const data = imageData.data;
   const centerX = width / 2;
   const centerY = height / 2;
   const maxDistance = Math.sqrt(centerX * centerX + centerY * centerY);
@@ -498,6 +513,9 @@ function applyVignette(data, width, height) {
       data[idx + 2] = data[idx + 2] * vignetteAmount;
     }
   }
+  imageData.data.set(data);
+
+  return imageData;
 }
 
 // Grayscale filter
@@ -712,67 +730,69 @@ function applySepia(imageData) {
 }
 
 async function loadMainPhoto() {
-  console.time('Main Photo Load');
+  console.time("Main Photo Load");
   const img = new Image();
   img.crossOrigin = "anonymous";
-  
+
   try {
     // Create a loading indicator
-    const loadingDiv = document.createElement('div');
-    loadingDiv.textContent = 'Loading main photo...';
-    loadingDiv.style.position = 'fixed';
-    loadingDiv.style.top = '10px';
-    loadingDiv.style.left = '50%';
-    loadingDiv.style.transform = 'translateX(-50%)';
-    loadingDiv.style.padding = '10px';
-    loadingDiv.style.background = 'rgba(0,0,0,0.7)';
-    loadingDiv.style.color = 'white';
-    loadingDiv.style.borderRadius = '5px';
+    const loadingDiv = document.createElement("div");
+    loadingDiv.textContent = "Loading main photo...";
+    loadingDiv.style.position = "fixed";
+    loadingDiv.style.top = "10px";
+    loadingDiv.style.left = "50%";
+    loadingDiv.style.transform = "translateX(-50%)";
+    loadingDiv.style.padding = "10px";
+    loadingDiv.style.background = "rgba(0,0,0,0.7)";
+    loadingDiv.style.color = "white";
+    loadingDiv.style.borderRadius = "5px";
     document.body.appendChild(loadingDiv);
 
     // Fetch and decode the image
-    const response = await fetch('https://upload.wikimedia.org/wikipedia/commons/3/3f/Fronalpstock_big.jpg');
+    const response = await fetch(
+      "https://upload.wikimedia.org/wikipedia/commons/3/3f/Fronalpstock_big.jpg"
+    );
     const blob = await response.blob();
     const objectUrl = URL.createObjectURL(blob);
-    
+
     img.onload = () => {
-      console.timeEnd('Main Photo Load');
+      console.timeEnd("Main Photo Load");
       loadingDiv.remove();
       URL.revokeObjectURL(objectUrl); // Clean up the object URL
     };
 
     img.onerror = (error) => {
-      console.error('Error loading main photo:', error);
-      loadingDiv.textContent = 'Error loading photo';
-      loadingDiv.style.background = 'rgba(255,0,0,0.7)';
+      console.error("Error loading main photo:", error);
+      loadingDiv.textContent = "Error loading photo";
+      loadingDiv.style.background = "rgba(255,0,0,0.7)";
     };
 
     img.src = objectUrl;
-    img.style.width = '100%';
-    img.style.maxHeight = '80vh';
-    img.style.objectFit = 'contain';
-    img.style.marginBottom = '20px';
-    
+    img.style.width = "100%";
+    img.style.maxHeight = "80vh";
+    img.style.objectFit = "contain";
+    img.style.marginBottom = "20px";
+
     // Use the element with id "mainPhoto" instead of prepending
-    const mainPhotoContainer = document.getElementById('mainPhoto');
+    const mainPhotoContainer = document.getElementById("mainPhoto");
     if (mainPhotoContainer) {
-      mainPhotoContainer.innerHTML = ''; // Clear any existing content
+      mainPhotoContainer.innerHTML = ""; // Clear any existing content
       mainPhotoContainer.appendChild(img);
     } else {
       console.error('Element with id "mainPhoto" not found');
     }
   } catch (error) {
-    console.error('Error in loadMainPhoto:', error);
+    console.error("Error in loadMainPhoto:", error);
   }
 }
 
 // Add a button to trigger the photo load
-const loadMainPhotoBtn = document.createElement('button');
-loadMainPhotoBtn.textContent = 'Load Main Photo';
-loadMainPhotoBtn.style.position = 'fixed';
-loadMainPhotoBtn.style.top = '10px';
-loadMainPhotoBtn.style.right = '10px';
-loadMainPhotoBtn.style.padding = '10px';
-loadMainPhotoBtn.style.zIndex = '1000';
-loadMainPhotoBtn.addEventListener('click', loadMainPhoto);
+const loadMainPhotoBtn = document.createElement("button");
+loadMainPhotoBtn.textContent = "Load Main Photo";
+loadMainPhotoBtn.style.position = "fixed";
+loadMainPhotoBtn.style.top = "10px";
+loadMainPhotoBtn.style.right = "10px";
+loadMainPhotoBtn.style.padding = "10px";
+loadMainPhotoBtn.style.zIndex = "1000";
+loadMainPhotoBtn.addEventListener("click", loadMainPhoto);
 document.body.appendChild(loadMainPhotoBtn);
