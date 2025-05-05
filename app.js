@@ -52,6 +52,8 @@ const loadMoreBtn = document.getElementById("loadMore");
 const loadingIndicator = document.getElementById("loading");
 
 const originalImages = new Map();
+blobs = [];
+imageDatas = [];
 
 function createPhotoCard(photo) {
   const card = document.createElement("div");
@@ -78,18 +80,43 @@ function createPhotoCard(photo) {
 
   let activeBtnToDebug;
 
-  const handleProcess = (e) => {
+  const createBlob = async () => {
+    const size = 10 * 1024 * 1024; // 10 MB
+    const buffer = new Uint8Array(size);
+    for (let i = 0; i < size; i++) {
+      buffer[i] = Math.floor(Math.random() * 256);
+    }
+    const blob = new Blob([buffer], { type: "application/octet-stream" });
+
+    return blob;
+  };
+
+  const handleProcess = async (e) => {
     const activeProcessButton = e.target;
 
     const restoreButton = document.createElement("button");
     restoreButton.textContent = "Restore original";
     restoreButton.className = "restore-button adjust-button";
     restoreButton.addEventListener("click", handleRestore);
-    originalImages.set(restoreButton, img.src);
+
+    const blob = await fetch(img.src)
+      .then((res) => res.blob())
+      .catch((e) => console.warn(e));
+    originalImages.set(restoreButton, {
+      url: img.src,
+      //   blob: blob,
+      //   data: new Array(1000000).fill("data"),
+    });
+
+    // const bigBlob = await createBlob();
+
+    blobs.push(blob.arrayBuffer());
+    // blobs.push(bigBlob);
+    console.log("blobs", blobs);
 
     processImg(img);
 
-    console.log("originalImages", originalImages.keys().next().value);
+    // console.log("originalImages", originalImages.keys().next().value);
     activeBtnToDebug = restoreButton;
     activeProcessButton.replaceWith(restoreButton);
   };
@@ -97,13 +124,13 @@ function createPhotoCard(photo) {
   const handleRestore = (e) => {
     const activeRestoreButton = e.target;
 
-    console.log("same button?", activeBtnToDebug === activeRestoreButton);
+    // console.log("same button?", activeBtnToDebug === activeRestoreButton);
     const originalImgSrc = originalImages.get(activeRestoreButton);
 
-    console.log("originalImages", originalImgSrc);
-    img.src = originalImgSrc;
+    // console.log("originalImages", originalImgSrc);
+    img.src = originalImgSrc.url;
 
-    console.log("originalImagesSize", originalImages.size);
+    // console.log("originalImagesSize", originalImages.size);
     const newProcessButton = document.createElement("button");
     newProcessButton.textContent = "Make picture worse";
     newProcessButton.className = "adjust-button";
@@ -123,8 +150,10 @@ function createPhotoCard(photo) {
   return card;
 }
 
+const dataUrls = [];
+
 function processImg(img) {
-  console.time("Image Processing");
+  //   console.time("Image Processing");
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
@@ -134,7 +163,7 @@ function processImg(img) {
 
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-  const start = performance.now();
+  //   const start = performance.now();
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
   // Apply filters in sequence
@@ -146,12 +175,15 @@ function processImg(img) {
 
   ctx.putImageData(filtered, 0, 0);
 
-  const end = performance.now();
-  console.log(`Processing took ${Math.round(end - start)}ms`);
+  //   const end = performance.now();
+  //   console.log(`Processing took ${Math.round(end - start)}ms`);
 
-  img.src = canvas.toDataURL("image/jpeg");
+  const dataUrl = canvas.toDataURL("image/jpeg");
+  //   dataUrls.push(dataUrl);
+  img.src = dataUrl;
 
-  console.timeEnd("Image Processing");
+  imageDatas.push(imageData);
+  //   console.timeEnd("Image Processing");
 }
 
 function processImage(photo, imgElement, callback) {
@@ -193,7 +225,7 @@ function processImage(photo, imgElement, callback) {
 
     imgElement.src = processedData;
 
-    console.log("processed");
+    // console.log("processed");
     if (callback) callback();
   };
 
@@ -730,7 +762,7 @@ function applySepia(imageData) {
 }
 
 async function loadMainPhoto() {
-  console.time("Main Photo Load");
+  //   console.time("Main Photo Load");
   const img = new Image();
   img.crossOrigin = "anonymous";
 
@@ -756,7 +788,7 @@ async function loadMainPhoto() {
     const objectUrl = URL.createObjectURL(blob);
 
     img.onload = () => {
-      console.timeEnd("Main Photo Load");
+      //       console.timeEnd("Main Photo Load");
       loadingDiv.remove();
       URL.revokeObjectURL(objectUrl); // Clean up the object URL
     };
