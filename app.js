@@ -22,8 +22,8 @@ async function applyFiltersInWorker(imageData, width, height) {
   });
 }
 
-const originalImagesCache = new Map();
-const filteredImagesCache = new Map();
+const originalImagesCache = new SimpleCache();
+const filteredImagesCache = new SimpleCache();
 
 function createProcessButton(img) {
   const processButton = document.createElement("button");
@@ -38,9 +38,7 @@ function createProcessButton(img) {
     restoreButton.className = "restore-button adjust-button";
     restoreButton.addEventListener("click", handleRestore);
 
-    originalImagesCache.set(restoreButton, {
-      url: img.src,
-    });
+    originalImagesCache.set(img.dataset.id, img.src);
 
     const dataUrl = await processImg(img);
     img.src = dataUrl;
@@ -51,8 +49,8 @@ function createProcessButton(img) {
   const handleRestore = (e) => {
     const activeRestoreButton = e.target;
 
-    const originalImgSrc = originalImagesCache.get(activeRestoreButton);
-    img.src = originalImgSrc.url;
+    const originalImgUrl = originalImagesCache.get(img.dataset.id);
+    img.src = originalImgUrl;
 
     const newProcessButton = document.createElement("button");
     newProcessButton.textContent = "Make picture worse";
@@ -73,6 +71,7 @@ function createPhotoCard(photo) {
   const img = document.createElement("img");
   img.src = photo.urls.regular;
   img.alt = photo.alt_description || "Photo";
+  img.dataset.id = photo.id;
   img.crossOrigin = "anonymous";
 
   const info = document.createElement("div");
@@ -108,8 +107,8 @@ async function processImg(img) {
   let filtered = imageData;
 
   // first check the cache
-  if (filteredImagesCache.has(imageData)) {
-    filtered = filteredImagesCache.get(imageData);
+  if (filteredImagesCache.has(img.src)) {
+    filtered = filteredImagesCache.get(img.src);
   } else {
     filtered = await applyFiltersInWorker(
       imageData,
@@ -117,7 +116,7 @@ async function processImg(img) {
       canvas.height
     );
     // store the result to avoid recalculation
-    filteredImagesCache.set(imageData, filtered);
+    filteredImagesCache.set(img.src, filtered);
   }
 
   ctx.putImageData(filtered, 0, 0);

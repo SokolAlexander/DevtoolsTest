@@ -55,12 +55,16 @@ Other possible approaches: break down the processing into several steps, and let
 - The app allows restoration of the original image after processing - the original image url is stored in originalImagesCache map.
 #### Catch
 - The originalImagesCache uses a restore button html element as a key. The element for the restore button is recreated on every click of the process button, but the cache is never cleaned. This keeps both an html button element (that is removed from the document) and the cache value in the cache indefinetely (Memory leak)
+#### Solution
+- Use the proper key - instead of a button element use some identifier of the image (e.g. image id passed through `dataset` property). Also use string for a value instead of an object with a single property. Use a simple LRU cache approach with a limit on amount of records.
 -----------------
 
 #### Feature
 - The app caches the processed image data in filteredImagesCache map to not recalculate the result of processing the second time
 #### Catch
 - The key for the map is an imageData object received from the canvas. The object is recreated each time so a) there is never a cache hit and b) there results are never cleared from cache (Memory leak)
+#### Solution
+- Use the proper key - instead of imageData use img.src. Instead of simple Map use a simple LRU cache approach with a limit on amount of records.
 
 ## Performance Issues to Investigate
 
