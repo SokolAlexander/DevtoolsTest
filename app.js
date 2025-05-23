@@ -143,26 +143,29 @@ function loadPhotos(count = 10) {
 }
 
 window.addEventListener("scroll", () => {
-  const gallery = document.getElementById("gallery");
-  const cards = gallery.querySelectorAll(".photo-card");
-  cards.forEach((card) => {
-    // reset opacity for all cards before applying the new one
-    card.style.opacity = "1";
-
-    const rect = card.getBoundingClientRect();
-
-    if (rect.bottom < 100) {
-      // opacity transition for the cards getting out of view
-      card.style.opacity = "0";
-    }
-  });
-
   if (
     window.innerHeight + window.scrollY >= document.body.offsetHeight - 50 &&
     !isLoading
   ) {
     loadPhotos(10); // Load 10 more photos when near bottom
   }
+});
+
+const observer = new IntersectionObserver(
+  (entries) => {
+    entries.forEach((entry) => {
+      entry.target.style.opacity =
+        entry.boundingClientRect.bottom < 100 ? "0" : "1";
+    });
+  },
+  {
+    root: null,
+    threshold: [0, 1],
+  }
+);
+
+document.querySelectorAll(".photo-card").forEach((card) => {
+  observer.observe(card);
 });
 
 const init = () => {

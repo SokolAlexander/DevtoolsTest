@@ -29,6 +29,11 @@ The app itself is a simple infinite-scroll photo gallery, with an option to appl
 - The app loads more photos when the scroll position is close enough to the bottom. The photos that are scrolling out of view (from the top) are hidden through opacity
 #### Catch
 - The opacity transition might be considered pretty if dumb, but in really it's just pretty dumb. The calculation and style assignment causes a write styles-read styles-write styles cycle for every card on screen (Layout thrashing);
+#### Solution
+- Remove style read & write from scroll handler. Use intersection observer insead.
+
+Other possible approaches:
+- Separate the handling of the styles into two phases: read all needed properties first, write second. 
 -----------------
 
 #### Feature
