@@ -40,6 +40,11 @@ Other possible approaches:
 - The app loads a header image separately, since the image is quite big in size and we don't want to block the page with it's loading
 #### Catch
 - The header image is loaded after the page is loaded and causes a visible jump in the UI (Cumulative Layout Shift)
+#### Solution
+- Make the wrapper of the image take up the space that the loaded image should take. Add a skeleton animation to it.
+Bonus - revoke object url of the image.
+Aditional note - Do not use such a huge media asset. Load the same image in a more appropriate format for the web (e.g. webp) and in smaller size.
+
 -----------------
 
 #### Feature

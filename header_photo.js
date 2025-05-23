@@ -1,6 +1,18 @@
 async function loadHeaderPhoto() {
   const img = new Image();
   img.crossOrigin = "anonymous";
+  img.className = "header-image";
+
+  const mainPhotoContainer = document.getElementById("mainPhoto");
+  if (!mainPhotoContainer) {
+    console.error('Element with id "mainPhoto" not found');
+    return;
+  }
+
+  mainPhotoContainer.classList.add("loading");
+  // Clear any existing content and add the image
+  mainPhotoContainer.innerHTML = "";
+  mainPhotoContainer.appendChild(img);
 
   try {
     // Fetch and decode the image
@@ -10,22 +22,15 @@ async function loadHeaderPhoto() {
     const blob = await response.blob();
     const objectUrl = URL.createObjectURL(blob);
 
-    // another leak, should be:
-    // img.onload = () => {
-    // URL.revokeObjectURL(objectUrl);
-    // };
+    // Set up load handler before setting src
+    img.onload = () => {
+      img.classList.add("loaded");
+      mainPhotoContainer.classList.remove("loading");
+      URL.revokeObjectURL(objectUrl);
+    };
 
     img.src = objectUrl;
-    img.className = "header-image";
-
-    const mainPhotoContainer = document.getElementById("mainPhoto");
-    if (mainPhotoContainer) {
-      mainPhotoContainer.innerHTML = ""; // Clear any existing content
-      mainPhotoContainer.appendChild(img);
-    } else {
-      console.error('Element with id "mainPhoto" not found');
-    }
   } catch (error) {
-    console.error("Error in loadMainPhoto:", error);
+    console.error("Error in loadHeaderPhoto:", error);
   }
 }
