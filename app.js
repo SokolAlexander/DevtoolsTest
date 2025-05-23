@@ -1,6 +1,26 @@
 let currentPage = 1;
 let isLoading = false;
 const gallery = document.getElementById("gallery");
+const worker = new Worker("filters.js");
+
+async function applyFiltersInWorker(imageData, width, height) {
+  return new Promise((resolve, reject) => {
+    worker.onmessage = function (e) {
+      console.log("result:", e.data);
+      resolve(e.data);
+    };
+
+    worker.onerror = function (e) {
+      console.error("error:", e);
+      reject(e);
+    };
+
+    worker.postMessage(
+      { imageData, width, height, type: "applyFiltersSequentially" },
+      [imageData.data.buffer]
+    );
+  });
+}
 
 const originalImagesCache = new Map();
 const filteredImagesCache = new Map();
@@ -22,7 +42,7 @@ function createProcessButton(img) {
       url: img.src,
     });
 
-    const dataUrl = processImg(img);
+    const dataUrl = await processImg(img);
     img.src = dataUrl;
 
     activeProcessButton.replaceWith(restoreButton);
@@ -75,7 +95,7 @@ function createPhotoCard(photo) {
   return card;
 }
 
-function processImg(img) {
+async function processImg(img) {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
@@ -91,7 +111,11 @@ function processImg(img) {
   if (filteredImagesCache.has(imageData)) {
     filtered = filteredImagesCache.get(imageData);
   } else {
-    filtered = applyFiltersSequentially(imageData, canvas.width, canvas.height);
+    filtered = await applyFiltersInWorker(
+      imageData,
+      canvas.width,
+      canvas.height
+    );
     // store the result to avoid recalculation
     filteredImagesCache.set(imageData, filtered);
   }

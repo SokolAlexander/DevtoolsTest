@@ -144,3 +144,16 @@ function applyFiltersSequentially(imageData, width, height) {
 
   return filtered;
 }
+
+self.onmessage = function (e) {
+  const { imageData, width, height, type } = e.data;
+  if (
+    type === "applyFiltersSequentially" &&
+    !!width &&
+    !!height &&
+    !!imageData
+  ) {
+    const filtered = applyFiltersSequentially(imageData, width, height);
+    self.postMessage(filtered);
+  }
+};

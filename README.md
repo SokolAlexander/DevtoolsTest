@@ -41,6 +41,14 @@ The app itself is a simple infinite-scroll photo gallery, with an option to appl
 - The app allows image processing by applying a set of filters
 #### Catch
 - The filters are implemented using very inefficient algorithms, and the processing is done on the main thread. This takes (depending on the CPU) a significant amount of time, blocking main thread and preventing next renders (Performance bottleneck)
+#### Solution
+- Move the processing into a web worker. Note that you might still see in the dev tools this function as a long task, but now it's not UI blocking. Bonus points for creating a loading state for the button/photocard to notify user of the long running process.
+
+Other possible approaches: break down the processing into several steps, and let browser render between them. This can be achieved with either of
+    - - `requestIdleCallback(fn)`, 
+    - - `setTimeout(fn, 0)`, 
+    - - `await Promise.resolve()`
+
 -----------------
 
 #### Feature
