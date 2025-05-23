@@ -1,12 +1,8 @@
 let currentPage = 1;
 let isLoading = false;
-
 const gallery = document.getElementById("gallery");
 
-// restore button to original image url cache
 const originalImagesCache = new Map();
-
-// original imageData to filtered imageData cache
 const filteredImagesCache = new Map();
 
 function createProcessButton(img) {
@@ -22,8 +18,6 @@ function createProcessButton(img) {
     restoreButton.className = "restore-button adjust-button";
     restoreButton.addEventListener("click", handleRestore);
 
-    // the element used as a key...
-    // maybe overkill. A new image element is a new key
     originalImagesCache.set(restoreButton, {
       url: img.src,
     });
@@ -93,12 +87,12 @@ function processImg(img) {
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   let filtered = imageData;
 
+  // first check the cache
   if (filteredImagesCache.has(imageData)) {
     filtered = filteredImagesCache.get(imageData);
   } else {
     filtered = applyFiltersSequentially(imageData, canvas.width, canvas.height);
-
-    // bad idea for a cache key :)
+    // store the result to avoid recalculation
     filteredImagesCache.set(imageData, filtered);
   }
 

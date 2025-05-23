@@ -1,15 +1,9 @@
-/*
-  ================================================
-  FILTERS
-  ================================================
-*/
 function applySharpen(imageData, width, height) {
   const data = imageData.data;
   const origData = new Uint8ClampedArray(data);
 
   const kernel = [0, -1, 0, -1, 5, -1, 0, -1, 0];
 
-  // Deliberately inefficient implementation
   for (let y = 1; y < height - 1; y++) {
     for (let x = 1; x < width - 1; x++) {
       let sumR = 0,
@@ -27,7 +21,6 @@ function applySharpen(imageData, width, height) {
         }
       }
 
-      // Set values with clamping
       const idx = (y * width + x) * 4;
       data[idx] = Math.min(255, Math.max(0, sumR));
       data[idx + 1] = Math.min(255, Math.max(0, sumG));
@@ -44,7 +37,6 @@ function applyVignette(imageData, width, height) {
   const centerY = height / 2;
   const maxDistance = Math.sqrt(centerX * centerX + centerY * centerY);
 
-  // Precalculate a ton of unnecessary values (wasteful)
   const distances = new Array(width * height);
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -54,19 +46,15 @@ function applyVignette(imageData, width, height) {
     }
   }
 
-  // Apply vignette effect
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const idx = (y * width + x) * 4;
 
-      // Use pre-calculated distance (inefficient memory access pattern)
       const distance = distances[y * width + x];
 
-      // Apply a smooth falloff for the vignette
       const falloff = Math.cos(distance * Math.PI * 0.5);
       const vignetteAmount = falloff * falloff;
 
-      // Apply the vignette effect
       data[idx] = data[idx] * vignetteAmount;
       data[idx + 1] = data[idx + 1] * vignetteAmount;
       data[idx + 2] = data[idx + 2] * vignetteAmount;
@@ -147,12 +135,6 @@ function applySepia(imageData) {
 
   return imageData;
 }
-
-/*
-    ================================================
-    FILTERS END
-    ================================================
-  */
 
 function applyFiltersSequentially(imageData, width, height) {
   let filtered = gaussianBlurFilter(imageData, width, height);
