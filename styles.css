@@ -57,7 +57,7 @@ h1 {
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease;
+  transition: transform 0.3s ease, opacity 0.3s ease-in-out;
 }
 
 .photo-card:hover {
@@ -118,4 +118,11 @@ h1 {
   padding: 20px;
   font-size: 18px;
   color: #666;
+}
+
+.header-image {
+  width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  margin-bottom: 20px;
 }
